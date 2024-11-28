@@ -2,9 +2,6 @@ package com.conductorsimulator.gamelogic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.conductorsimulator.gamescreens.PlayScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,9 +16,10 @@ class GameViewModel(): ViewModel() {
 
     fun onEvent(event: GameEvent) {
 
-        when(event){
+        when (event) {
             GameEvent.StartGame -> {
-                _state.update { it.copy(gameState = State.PLAY)}
+                _state.update { updateGame(it, reset = true) }
+                _state.update { it.copy(gameState = State.PLAY) }
 
                 viewModelScope.launch {
                     while (state.value.gameState == State.PLAY) {
@@ -30,29 +28,42 @@ class GameViewModel(): ViewModel() {
                     }
                 }
             }
+
             GameEvent.KillGame -> {
                 val newHighScore =
                     if (state.value.score > state.value.highScore) state.value.score
                     else state.value.highScore
 
-                _state.update { it.copy(
-                    gameState = State.MENU,
-                    highScore = newHighScore,
-                    isOver = true)
+                _state.update {
+                    it.copy(
+                        gameState = State.MENU,
+                        highScore = newHighScore,
+                        isOver = true
+                    )
                 }
 
 
             }
-            GameEvent.PauseGame -> { _state.update { it.copy(gameState = State.PAUSED) }}
-            GameEvent.PlusScore -> { _state.update { it.copy(score = state.value.score + 1) }}
+
+            GameEvent.PauseGame -> {
+                _state.update { it.copy(gameState = State.PAUSED) }
+            }
+
+            GameEvent.PlusScore -> {
+                _state.update { it.copy(score = state.value.score + 1) }
+            }
         }
     }
 
-    private fun updateGame(currentGame: GameState): GameState {
-        if (currentGame.isOver) {
-            return currentGame
+    private fun updateGame(currentGame: GameState, reset: Boolean = false): GameState {
+        return if (reset) {
+            GameState() // Возвращаем новое состояние для перезапуска игры
+        } else {
+            if (currentGame.isOver) {
+                currentGame
+            } else {
+                currentGame // Ваши обновления для текущего состояния
+            }
         }
-        return currentGame
     }
 }
-
