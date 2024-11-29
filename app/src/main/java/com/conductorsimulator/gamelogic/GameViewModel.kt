@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
-class GameViewModel(): ViewModel() {
+class GameViewModel() : ViewModel() {
     private val _state = MutableStateFlow(GameState())
     val state = _state.asStateFlow()
 
@@ -51,6 +51,31 @@ class GameViewModel(): ViewModel() {
 
             GameEvent.PlusScore -> {
                 _state.update { it.copy(score = state.value.score + 1) }
+            }
+
+            GameEvent.TerminalOn -> {
+                _state.update {
+                    if (state.value.conductor.terminal) {
+                        it.copy(
+                            conductor = it.conductor.copy(terminal = false) // Устанавливаем terminal в true
+                        )
+                    } else {
+                        it.copy(
+                            conductor = it.conductor.copy(terminal = true) // Устанавливаем terminal в true
+                        )
+                    }
+                }
+            }
+
+            GameEvent.Payment -> {
+                if (state.value.conductor.terminal) {
+                    _state.update { it.copy(score = state.value.score + 10) }
+                    _state.update {
+                        it.copy(
+                            conductor = it.conductor.copy(money = state.value.conductor.money + 33) // Устанавливаем terminal в true
+                        )
+                    }
+                }
             }
         }
     }
