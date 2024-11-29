@@ -18,12 +18,14 @@ class GameViewModel() : ViewModel() {
 
         when (event) {
             GameEvent.StartGame -> {
+                val highScore = state.value.highScore
                 _state.update { updateGame(it, reset = true) }
-                _state.update { it.copy(gameState = State.PLAY) }
+                _state.update { it.copy(highScore = highScore, gameState = State.PLAY) }
 
                 viewModelScope.launch {
                     while (state.value.gameState == State.PLAY) {
                         delay(1000)
+
                         _state.value = updateGame(state.value)
                     }
                 }

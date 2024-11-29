@@ -1,5 +1,6 @@
 package com.conductorsimulator.gamescreens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,11 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,20 +28,37 @@ import androidx.navigation.compose.rememberNavController
 import com.conductorsimulator.gamelogic.GameEvent
 import com.conductorsimulator.gamelogic.GameState
 import com.conductorsimulator.R
+import com.conductorsimulator.managers.DataStoreManager
+import kotlinx.coroutines.launch
 
 @Preview
 @Composable
 fun MenuScreenPreview() {
-    MenuScreen(GameState(), rememberNavController()) { }
+    MenuScreen(GameState(), DataStoreManager(LocalContext.current), rememberNavController()) { }
 }
 
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun MenuScreen(
     state: GameState,
+    dataStoreManager: DataStoreManager,
     navController: NavController,
     onEvent: (GameEvent) -> Unit
 ) {
+    val coroutine = rememberCoroutineScope()
+    var highScore = 0
+    LaunchedEffect(key1 = true) {
+        dataStoreManager.getHighScore().collect{ data ->
+            highScore = data
+        }
+    }
+    if (state.highScore > highScore) {
+        highScore = state.highScore
+        coroutine.launch {
+            dataStoreManager.saveHighScore(state.highScore)
+        }
+    }
     Image(
         painter = painterResource(id = R.drawable.menu_bg),
         contentDescription = "menu_bg",
@@ -57,17 +78,16 @@ fun MenuScreen(
             alignment = Alignment.Center,
             modifier = Modifier
                 .clickable(onClick = {
-                    onEvent(GameEvent.StartGame)
                     navController.navigate("play")
-
+                    onEvent(GameEvent.StartGame)
                 })
                 .scale(0.5f)
 
         )
 
         Text(
-            text = "HIGH SCORE:\n${state.highScore}",
-            color = Color.Black,
+            text = "HIGH SCORE:\n${highScore}",
+            color = Color.White,
             fontSize = 30.sp,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold
