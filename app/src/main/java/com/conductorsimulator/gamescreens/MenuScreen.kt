@@ -57,8 +57,9 @@ fun MenuScreen(
             alignment = Alignment.Center,
             modifier = Modifier
                 .clickable(onClick = {
-                    navController.navigate("play")
                     onEvent(GameEvent.StartGame)
+                    navController.navigate("play")
+
                 })
                 .scale(0.5f)
 
