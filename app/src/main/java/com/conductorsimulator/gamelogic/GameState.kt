@@ -2,24 +2,32 @@ package com.conductorsimulator.gamelogic
 
 import android.content.res.Resources
 import android.graphics.Point
+import android.graphics.PointF
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import com.conductorsimulator.R
 import com.conductorsimulator.gamelogic.entities.Conductor
 import com.conductorsimulator.gamelogic.entities.Passenger
 import kotlin.random.Random
 
-data class GameState (
+data class GameState(
     val score: Int = 0,
     val highScore: Int = 0,
     val lives: Int = 3,
     private val passengersPicture: Set<String> = setOf(),
     private val unusedPassengersPicture: Set<String> = setOf("1", "2", "3"),
-    var passengers: List<Passenger> = emptyList(),
     val conductor: Conductor = Conductor(),
     val isOver: Boolean = false,
     val gameState: State = State.MENU
 ) {
+    // Начальная инициализация пассажиров
+    private val initialPassengers: List<Passenger> = emptyList()
+
+    // Теперь passengers отслеживается Compose
+    var passengers by mutableStateOf(initialPassengers)
     companion object {
         @Composable
         fun generatePassengers(count: Int): List<Passenger> {
@@ -48,16 +56,16 @@ data class GameState (
                 val painter = painterResource(id = imageRes) // Для получения размеров изображения
                 val intrinsicSize = painter.intrinsicSize
 
-                val scaleFactor = 3.5f // Коэффициент уменьшения
+                val scaleFactor = 5f // Коэффициент уменьшения
                 val passengerWidth = (intrinsicSize.width / scaleFactor)
                 val passengerHeight = (intrinsicSize.height / scaleFactor)
-                val minX = (passengerWidth/2).toInt() // Левая граница
-                val maxX = (screenWidth - passengerWidth/2).toInt() // Правая граница
+                val minX = (passengerWidth / 2)// Левая граница
+                val maxX = (screenWidth - passengerWidth / 2)// Правая граница
 
-                val xOffset = random.nextInt(minX, maxX) // Случайное значение с учётом размеров
+                val xOffset = minX + (random.nextFloat() * (maxX - minX))// Случайное значение с учётом размеров
                 val yOffset = when (layer) {
-                    1 -> (screenHeight * 0.7f - passengerHeight).toInt()
-                    else -> (screenHeight * 0.65f - passengerHeight).toInt()
+                    1 -> (screenHeight * 0.35f - passengerHeight)
+                    else -> (screenHeight * 0.3f - passengerHeight)
                 }
 
                 // Создаём пассажира
@@ -65,25 +73,53 @@ data class GameState (
                     id = i,
                     layer = layer,
                     location = 1,
-                    point = Point(xOffset, yOffset),
-                    ticket = random.nextBoolean(),
+                    point = PointF(xOffset, yOffset),
+                    ticket = false,
                     angryLVL = 0,
                     stations = random.nextInt(1, 10),
                     imageRes = imageRes
                 )
-
-                // Логируем координаты пассажира
-//                println(
-//                    "Passenger ID: ${passenger.id}, Layer: ${passenger.layer}, " +
-//                            "X: ${passenger.point.x}, Y: ${passenger.point.y}, Image: ${passenger.imageRes}"
-//                )
-
                 passenger
             }
         }
     }
+    fun sortPassengersByLayerAndPosition() {
+        passengers = passengers.sortedWith(compareByDescending<Passenger> { it.layer }
+            .thenByDescending { it.point.y }) // Сортируем, не удаляя объекты
+    }
+
+
+
+
+
+    fun movePassengerToFront(id: Int, newLayer: Int, newPosition: PointF) {
+        // Находим пассажира по ID
+        val passengerIndex = passengers.indexOfFirst { it.id == id }
+        if (passengerIndex == -1) return // Если пассажир не найден, выходим
+
+        val updatedPassenger = passengers[passengerIndex].copy( // Создаём копию с обновлёнными параметрами
+            layer = newLayer,
+            point = newPosition
+        )
+
+        passengers = passengers.toMutableList().apply {
+            this[passengerIndex] = updatedPassenger // Обновляем только нужного пассажира
+        }
+
+        println("Updated passengers list: ${passengers.map { it.toString() }}")
+        sortPassengersByLayerAndPosition()
+    }
+
+
+
+
+
 }
-        fun getPassengerImages(): List<Int> {
+
+
+
+
+fun getPassengerImages(): List<Int> {
     return listOf(
         R.drawable.passenger_1,
         R.drawable.passenger_2,
@@ -94,7 +130,10 @@ data class GameState (
         R.drawable.passenger_7,
         R.drawable.passenger_8
     )
+
+
 }
+
 
 enum class State {
     MENU,

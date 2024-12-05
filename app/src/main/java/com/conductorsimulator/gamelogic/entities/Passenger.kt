@@ -1,12 +1,13 @@
 package com.conductorsimulator.gamelogic.entities
 
-import android.graphics.Point
+
+import android.graphics.PointF
 
 data class Passenger(
     val id: Int, // Уникальный идентификатор
-    val layer: Int, // Слой, на котором находится пассажир
+    var layer: Int, // Слой, на котором находится пассажир
     val location: Int, // Локация в игре
-    val point: Point, // Координаты пассажира
+    var point: PointF, // Координаты пассажира
     val ticket: Boolean, // Есть ли у пассажира билет
     val angryLVL: Int, // Уровень недовольства
     val stations: Int, // Количество станций, которые пассажир должен проехать
