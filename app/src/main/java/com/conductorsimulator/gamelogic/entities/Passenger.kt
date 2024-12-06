@@ -2,6 +2,10 @@ package com.conductorsimulator.gamelogic.entities
 
 
 import android.graphics.PointF
+import android.util.Size
+import android.util.SizeF
+
+import androidx.compose.ui.unit.DpSize
 
 data class Passenger(
     val id: Int, // Уникальный идентификатор
@@ -11,5 +15,6 @@ data class Passenger(
     val ticket: Boolean, // Есть ли у пассажира билет
     val angryLVL: Int, // Уровень недовольства
     val stations: Int, // Количество станций, которые пассажир должен проехать
-    val imageRes: Int// Ресурс изображения
+    val imageRes: Int,// Ресурс изображения
+    val size: SizeF
 )

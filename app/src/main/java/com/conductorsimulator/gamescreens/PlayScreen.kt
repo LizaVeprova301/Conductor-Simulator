@@ -42,7 +42,9 @@ import com.conductorsimulator.gamelogic.GameEvent
 import com.conductorsimulator.gamelogic.GameState
 import com.conductorsimulator.gamelogic.entities.Passenger
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.IntOffset
 
 import kotlin.random.Random
@@ -71,7 +73,7 @@ fun PlayScreen(
     if (state.passengers.isEmpty()) {
         println("Generating passengers...")
         state.passengers =
-            GameState.generatePassengers(Random.nextInt(3, 6)) // Например, генерируем 6 пассажиров
+            GameState.generatePassengers(Random.nextInt(3, 4)) // Например, генерируем 6 пассажиров
         println("Generated passengers: ${state.passengers}")
     }
 
@@ -136,9 +138,8 @@ fun PlayScreen(
                 imageRes = passenger.imageRes,
                 onDragEnd = { id, newLayer, newPosition ->
                     println("Passenger $id dragged to newLayer: $newLayer, newPosition: $newPosition")
-                    val targetLayer = if (newLayer == 1) 1 else 2
 
-                    state.movePassengerToFront(id, targetLayer, newPosition)
+                    state.movePassengerToFront(id, newLayer, newPosition)
                     println("Passengers after move: ${state.passengers.map { "ID:${it.id}, Layer:${it.layer}, Pos:${it.point}" }}")
 
                 }
@@ -183,78 +184,68 @@ fun PlayScreen(
 
 
 
-
-
 @Composable
 fun PassengerButton(
     passenger: Passenger,
     onEvent: (GameEvent) -> Unit,
     imageRes: Int,
-    onDragEnd: (Int, Int, PointF) -> Unit // Передаем ID, новый слой и позицию
+    onDragEnd: (Int, Int, PointF) -> Unit
 ) {
-    println("Rendering PassengerButton for passenger ID: ${passenger.id}, Layer: ${passenger.layer}, Pos: ${passenger.point}")
     val painter = painterResource(id = imageRes)
-    val intrinsicSize = painter.intrinsicSize
 
-    // Масштабируем изображение пропорционально
-    val scaleFactor = 6f
-    val width = (intrinsicSize.width / scaleFactor)
-    val height = (intrinsicSize.height / scaleFactor)
+    // Получаем размеры экрана в dp
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.dp
+    val screenHeightDp = configuration.screenHeightDp.dp
 
-    // Вспомогательное состояние для текущей позиции
-    var offsetX by remember { mutableStateOf(passenger.point.x) }
-    var offsetY by remember { mutableStateOf(passenger.point.y) }
+    // Получаем плотность экрана
+    val density = LocalDensity.current
 
+    // Переменные для хранения положения
+    var offsetX by remember { mutableFloatStateOf(passenger.point.x) }
+    var offsetY by remember { mutableFloatStateOf(passenger.point.y) }
 
     Image(
         painter = painter,
         contentDescription = "Passenger ${passenger.id}",
         modifier = Modifier
-            .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) }
-            .size(width.dp, height.dp) // Размер изображения
+            .offset(
+                // Преобразуем px в dp для использования в offset
+                x = with(density) { offsetX.coerceIn(0f, screenWidthDp.toPx() - passenger.size.width).toDp() },
+                y = with(density) { offsetY.coerceIn(0f, screenHeightDp.toPx() - passenger.size.height).toDp() }
+            )
+            .size(passenger.size.width.dp, passenger.size.height.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        offsetX += dragAmount.x
-                        offsetY += dragAmount.y
-                        println("Dragging Passenger ${passenger.id}: offsetX=$offsetX, offsetY=$offsetY")
+                        offsetX = (offsetX + dragAmount.x).coerceIn(0f, with(density) { screenWidthDp.toPx() - passenger.size.width })
+                        offsetY = (offsetY + dragAmount.y).coerceIn(0f, with(density) { screenHeightDp.toPx() - passenger.size.height })
                     },
                     onDragEnd = {
-                        val screenHeight = Resources.getSystem().displayMetrics.heightPixels
-                        // Границы для определения слоев
-                        val layerBoundary = (screenHeight*0.5f)
+                        // Вычисляем границу слоя
+                        val layerBoundary = with(density) { screenHeightDp.toPx() * 0.3f }
+//                        val (newLayer, adjustedOffsetY) = if (offsetY > layerBoundary) {
+//                            1 to layerBoundary + passenger.size.height / 2f
+//                        } else {
+//                            2 to layerBoundary - passenger.size.height / 2f
+//                        }
+
                         val newLayer = if (offsetY > layerBoundary) 1 else 2 // Определяем слой
                         println("Passenger ${passenger.id} Layer=$newLayer, PosY=$offsetY , layerBoundary=$layerBoundary")
                         // Корректируем позицию по Y в зависимости от слоя
-                        offsetY = if (newLayer == 1) screenHeight * 0.7f - height
-                        else screenHeight * 0.65f - height
+                        offsetY = if (newLayer == 1) (layerBoundary + passenger.size.height / 2f)
+                        else (layerBoundary - passenger.size.height / 2f)
 
+                        // Ограничиваем корректное положение по Y
                         val newPosition = PointF(offsetX, offsetY)
-                        println("Passenger ${passenger.id} drag ended at: Layer=$newLayer, Pos=$newPosition")
-
-                        // Сообщаем об изменении позиции пассажира
                         onDragEnd(passenger.id, newLayer, newPosition)
                     }
                 )
             }
             .clickable(onClick = {
-                println("Passenger ${passenger.id} clicked for payment, Position ${passenger.point.y}")
-                onEvent(GameEvent.Payment) })
+                onEvent(GameEvent.Payment)
+            })
     )
 }
-
-
-
-@Composable
-fun Int.toDp(): Dp {
-    return with(LocalDensity.current) { this@toDp.toDp() }
-}
-
-@Composable
-fun Dp.toPx(): Float {
-    return with(LocalDensity.current) { this@toPx.toPx() }
-}
-
-
 
