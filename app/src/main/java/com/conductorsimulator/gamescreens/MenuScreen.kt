@@ -48,7 +48,7 @@ fun MenuScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
-            .offset(y = 150.dp)
+            .offset(x = (-150).dp, y = 160.dp)
             .fillMaxSize()
     ) {
         Image(
@@ -56,6 +56,7 @@ fun MenuScreen(
             contentDescription = "play_button",
             alignment = Alignment.Center,
             modifier = Modifier
+                .offset(x = 200.dp, y = (-185).dp)
                 .clickable(onClick = {
                     onEvent(GameEvent.StartGame)
                     navController.navigate("play")
@@ -66,10 +67,10 @@ fun MenuScreen(
         )
 
         Text(
-            text = "HIGH SCORE:\n${state.highScore}",
-            color = Color.Black,
-            fontSize = 30.sp,
-            textAlign = TextAlign.Center,
+            text = "${state.highScore}",
+            color = Color.Cyan,
+            fontSize = 50.sp,
+            textAlign = TextAlign.Left,
             fontWeight = FontWeight.Bold
         )
 
