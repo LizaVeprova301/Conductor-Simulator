@@ -49,7 +49,7 @@ fun MenuScreen(
     val coroutine = rememberCoroutineScope()
     var highScore = 0
     LaunchedEffect(key1 = true) {
-        dataStoreManager.getHighScore().collect{ data ->
+        dataStoreManager.getHighScore().collect { data ->
             highScore = data
         }
     }

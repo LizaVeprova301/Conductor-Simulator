@@ -1,13 +1,13 @@
 package com.conductorsimulator.gamelogic
 
+import android.content.res.Configuration
 import android.graphics.PointF
 import android.util.Size
 import android.util.SizeF
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import com.conductorsimulator.R
 import com.conductorsimulator.gamelogic.entities.Conductor
 import com.conductorsimulator.gamelogic.entities.Passenger
@@ -19,103 +19,111 @@ data class GameState(
     val lives: Int = 3,
     private val passengersPicture: Set<String> = setOf(),
     private val unusedPassengersPicture: Set<String> = setOf("1", "2", "3"),
-    var passengers: List<Passenger> = emptyList(),
+    var passengers: MutableList<Passenger> = emptyList<Passenger>().toMutableList(),
     val conductor: Conductor = Conductor(),
     val isOver: Boolean = false,
-    val gameState: State = State.MENU
+    val gameState: State = State.MENU,
+    var screenSize: Size = Size(0, 0),
+    var density: Float = 0f
 ) {
+    @Composable
+    fun generatePassengers(count: Int): MutableList<Passenger> {
+        val configuration = LocalConfiguration.current
+        val density = LocalDensity.current.density
+        setScreenSizeAndDensity(configuration, density)
 
-    companion object {
-        @Composable
-        fun generatePassengers(count: Int): List<Passenger> {
-            val random = Random(System.currentTimeMillis())
-            val images = getPassengerImages().toMutableList() // Список доступных изображений
-            val configuration = LocalConfiguration.current
-            val screenHeight = configuration.screenHeightDp
-            val screenWidth = configuration.screenWidthDp
 
-            // Лимиты на количество пассажиров в каждом слое
-            val layerLimits = mutableMapOf(1 to 3, 2 to 3)
-            val layerCounts = mutableMapOf(1 to 0, 2 to 0) // Текущее количество пассажиров в слоях
+        val random = Random(System.currentTimeMillis())
+        val images = getPassengerImages().toMutableList()
+        val screenHeight = LocalConfiguration.current.screenHeightDp
+        val screenWidth = LocalConfiguration.current.screenWidthDp
 
-            return (1..count).map { i ->
-                if (images.isEmpty()) throw IllegalStateException("Not enough unique images for passengers!")
+        // Лимиты на количество пассажиров в каждом слое
+        val layerLimits = mutableMapOf(1 to 3, 2 to 3)
+        val layerCounts = mutableMapOf(1 to 0, 2 to 0)
 
-                // Определяем слой с учётом ограничений
-                val availableLayers =
-                    layerLimits.filter { (layer, limit) -> layerCounts[layer]!! < limit }.keys
-                if (availableLayers.isEmpty()) throw IllegalStateException("No layers available for more passengers!")
+        return (1..count).map { i ->
+            if (images.isEmpty()) throw IllegalStateException("Not enough unique images for passengers!")
 
-                val layer = availableLayers.random() // Выбираем случайный доступный слой
-                layerCounts[layer] = layerCounts[layer]!! + 1 // Увеличиваем счётчик для слоя
+            // Определяем слой с учётом ограничений
+            val availableLayers =
+                layerLimits.filter { (layer, limit) -> layerCounts[layer]!! < limit }.keys
+            if (availableLayers.isEmpty()) throw IllegalStateException("No layers available for more passengers!")
 
-                // Рассчитываем координаты пассажира
-                val imageRes = images.removeAt(random.nextInt(images.size)) // Уникальная картинка
-                val painter = painterResource(id = imageRes) // Для получения размеров изображения
-                val intrinsicSize = painter.intrinsicSize
+            val layer = availableLayers.random()
+            layerCounts[layer] = layerCounts[layer]!! + 1
 
-                val scaleFactor = 10f // Коэффициент уменьшения
-                val passengerWidth = (intrinsicSize.width / scaleFactor)
-                val passengerHeight = (intrinsicSize.height / scaleFactor)
-                val minX = (passengerWidth / 2)// Левая граница
-                val maxX = (screenWidth - passengerWidth / 2)// Правая граница
+            // Рассчитываем координаты пассажира
+            val imageRes = images.removeAt(random.nextInt(images.size))
+            val painter = painterResource(id = imageRes)
+            val intrinsicSize = painter.intrinsicSize
 
-                val xOffset = minX + (random.nextFloat() * (maxX - minX))// Случайное значение с учётом размеров
-                val yOffset = when (layer) {
-                    1 -> (screenHeight * 0.35f - passengerHeight/2f)
-                    else -> (screenHeight * 0.3f - passengerHeight/2f)
-                }
 
-                // Создаём пассажира
-                val passenger = Passenger(
-                    id = i,
-                    layer = layer,
-                    location = 1,
-                    point = PointF(xOffset, yOffset),
-                    ticket = false,
-                    angryLVL = 0,
-                    stations = random.nextInt(1, 10),
-                    imageRes = imageRes,
-                    size = SizeF(passengerWidth,passengerHeight)
-                )
-                passenger
+            val scaleFactor = 5f // Коэффициент уменьшения
+            val passengerWidth = (intrinsicSize.width / scaleFactor)
+            val passengerHeight = (intrinsicSize.height / scaleFactor)
+            val minX = (passengerWidth / 2)
+            val maxX = (screenWidth * 2 - passengerWidth / 2)
+
+            val xOffset =
+                minX + (random.nextFloat() * (maxX - minX))
+            val layerBoundary1 = screenHeight * 1.9f
+            val layerBoundary2 = screenHeight * 1.8f
+            val yOffset = when (layer) {
+                1 -> (layerBoundary1 - passengerHeight)
+                else -> (layerBoundary2 - passengerHeight)
             }
-        }
+            val zindex = when (layer) {
+                1 -> (20 + i)
+                else -> (10 + i)
+            }
+
+            // Создаём пассажира
+            val passenger = Passenger(
+                id = i,
+                layer = layer,
+                location = 1,
+                point = PointF(xOffset, yOffset),
+                ticket = false,
+                angryLVL = 0,
+                stations = random.nextInt(1, 10),
+                imageRes = imageRes,
+                size = SizeF(passengerWidth, passengerHeight),
+                zindex = zindex.toFloat()
+            )
+            passenger
+        }.toMutableList()
     }
-    fun sortPassengersByLayerAndPosition() {
-        passengers = passengers.sortedWith(compareByDescending<Passenger> { it.layer })
-           // Сортируем, не удаляя объекты
-    }
 
 
-
-
-
-    fun movePassengerToFront(id: Int, newLayer: Int, newPosition: PointF) {
-        // Находим пассажира по ID
-        val passengerIndex = passengers.indexOfFirst { it.id == id }
-        if (passengerIndex == -1) return // Если пассажир не найден, выходим
-
-        val updatedPassenger = passengers[passengerIndex].copy( // Создаём копию с обновлёнными параметрами
-            layer = newLayer,
-            point = newPosition
+    fun updatePassenger(
+        newPassenger: Passenger
+    ) {
+        val passengerIndex = passengers.indexOfFirst { it.id == newPassenger.id }
+        if (passengerIndex == -1) return
+        passengers[passengerIndex] = newPassenger.copy(
+            layer = newPassenger.layer,
+            point = newPassenger.point,
+            zindex = newPassenger.zindex
         )
-        println("Passenger ${updatedPassenger.id} update in movePassengerToFront: layer ${updatedPassenger.layer}, newPosition: ${updatedPassenger.point.y}")
-        passengers = passengers.toMutableList().apply {
-            this[passengerIndex] = updatedPassenger // Обновляем только нужного пассажира
-        }
-
-        println("Updated passengers list: ${passengers.map { it.toString() }}")
-        sortPassengersByLayerAndPosition()
     }
 
 
+    fun setScreenSizeAndDensity(configuration: Configuration, density: Float) {
+        val screenHeight = configuration.screenHeightDp
+        val screenWidth = configuration.screenWidthDp
+        this.density = density
 
+        this.screenSize = Size(screenWidth, screenHeight)
+    }
+
+    @Composable
+    fun Float.toPx(): Float {
+        return this * LocalDensity.current.density
+    }
 
 
 }
-
-
 
 
 fun getPassengerImages(): List<Int> {
@@ -123,14 +131,12 @@ fun getPassengerImages(): List<Int> {
         R.drawable.passenger_1,
         R.drawable.passenger_2,
         R.drawable.passenger_3,
-        R.drawable.passenger_4, // Добавьте все ваши ресурсы
+        R.drawable.passenger_4,
         R.drawable.passenger_5,
         R.drawable.passenger_6,
         R.drawable.passenger_7,
         R.drawable.passenger_8
     )
-
-
 }
 
 

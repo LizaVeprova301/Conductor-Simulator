@@ -1,19 +1,34 @@
 package com.conductorsimulator.gamelogic
 
+import android.content.res.Configuration
+import android.graphics.PointF
+import android.util.Size
+import android.util.SizeF
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conductorsimulator.gamelogic.entities.Passenger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 
 class GameViewModel() : ViewModel() {
     private val _state = MutableStateFlow(GameState())
     val state = _state.asStateFlow()
-
-
     fun onEvent(event: GameEvent) {
 
         when (event) {
@@ -93,4 +108,8 @@ class GameViewModel() : ViewModel() {
             }
         }
     }
+
+
 }
+
+

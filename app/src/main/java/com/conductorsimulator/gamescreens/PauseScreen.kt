@@ -31,7 +31,7 @@ fun PauseScreen(
     state: GameState,
     navController: NavController,
     onEvent: (GameEvent) -> Unit
-    ) {
+) {
     Image(
         painter = painterResource(id = R.drawable.pause_bg),
         contentDescription = "pause_bg",
@@ -41,7 +41,7 @@ fun PauseScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
-            .offset(y =145.dp)
+            .offset(y = 145.dp)
             .fillMaxSize()
     ) {
         Image(
@@ -50,7 +50,7 @@ fun PauseScreen(
             alignment = Alignment.Center,
             modifier = Modifier
                 .clickable(onClick = {
-                    onEvent(GameEvent.TerminalOn)
+
                     navController.navigate("play")
                 })
                 .scale(0.9f)
@@ -60,7 +60,7 @@ fun PauseScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
-            .offset(y =290.dp)
+            .offset(y = 290.dp)
             .fillMaxSize()
     ) {
         Image(

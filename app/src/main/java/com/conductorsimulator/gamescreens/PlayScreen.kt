@@ -1,8 +1,7 @@
 package com.conductorsimulator.gamescreens
-import android.content.res.Resources
-import android.graphics.Point
+
+
 import android.graphics.PointF
-import androidx.annotation.Px
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -43,10 +42,11 @@ import com.conductorsimulator.gamelogic.GameState
 import com.conductorsimulator.gamelogic.entities.Passenger
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.IntOffset
-
+import androidx.compose.ui.zIndex
 import kotlin.random.Random
 
 
@@ -61,7 +61,8 @@ fun PlayScreen(
     state: GameState,
     navController: NavController,
     onEvent: (GameEvent) -> Unit,
-) {
+
+    ) {
     println("Initializing PlayScreen with state: ${state.passengers.map { "ID:${it.id}, Layer:${it.layer}, Pos:${it.point}" }}")
 
     Image(
@@ -73,7 +74,8 @@ fun PlayScreen(
     if (state.passengers.isEmpty()) {
         println("Generating passengers...")
         state.passengers =
-            GameState.generatePassengers(Random.nextInt(3, 4)) // Например, генерируем 6 пассажиров
+            state.generatePassengers(Random.nextInt(3, 4))
+
         println("Generated passengers: ${state.passengers}")
     }
 
@@ -100,8 +102,8 @@ fun PlayScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 16.dp), // Отступ сверху
-        horizontalAlignment = Alignment.End // Выравнивание по правому краю
+            .padding(top = 16.dp),
+        horizontalAlignment = Alignment.End
     ) {
         Text(
             text = "SCORE: ${state.score}",
@@ -110,7 +112,7 @@ fun PlayScreen(
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(8.dp)) // Разделитель между текстами
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "MONEY: ${state.conductor.money}",
@@ -120,32 +122,60 @@ fun PlayScreen(
         )
     }
 
+    state.passengers.forEach { passenger ->
 
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        println("Sorting passengers by layer and position...")
-        // Сортируем пассажиров перед отрисовкой
-        state.sortPassengersByLayerAndPosition()
-        println("Passengers after sorting: ${state.passengers.map { "ID:${it.id}, Layer:${it.layer}, Pos:${it.point}" }}")
+        PassengerImage(
+            passenger = passenger,
+            newZindex = { newLayer ->
+                println("я здесь")
 
-        // Отрисовываем пассажиров
-        state.passengers.forEach { passenger ->
-            PassengerButton(
-                passenger = passenger,
-                onEvent = onEvent,
-                imageRes = passenger.imageRes,
-                onDragEnd = { id, newLayer, newPosition ->
-                    println("Passenger $id dragged to newLayer: $newLayer, newPosition: $newPosition")
+                var newZindex = 0f
+                if (newLayer == 1) {
+                    if (state.passengers.filter { it.layer == 1 }
+                            .filter { it.id != passenger.id }.isEmpty()) {
+                        newZindex = 20f
+                    } else {
+                        newZindex = state.passengers.filter { it.layer == 1 }
+                            .filter { it.id != passenger.id }.maxBy { it.zindex }
+                            .zindex + 1f
+                    }
 
-                    state.movePassengerToFront(id, newLayer, newPosition)
-                    println("Passengers after move: ${state.passengers.map { "ID:${it.id}, Layer:${it.layer}, Pos:${it.point}" }}")
-
+                } else if (state.passengers.filter { it.layer == 2 }
+                        .filter { it.id != passenger.id }.isEmpty()) {
+                    newZindex = 10f
+                } else {
+                    newZindex = state.passengers.filter { it.layer == 2 }
+                        .filter { it.id != passenger.id }
+                        .maxBy { it.zindex }
+                        .zindex + 1f
                 }
-            )
-        }
+
+                newZindex
+
+            },
+            newLayer = { offset ->
+                val layerBoundary = state.screenSize.height * 1.3f
+                val newLayer = if (offset.y > layerBoundary) 1 else 2
+
+                newLayer
+            },
+            layerOffset = { layer ->
+                val layerBoundary1 = state.screenSize.height * 1.9f
+                val layerBoundary2 = state.screenSize.height * 1.8f
+                val yOffset = when (layer) {
+                    1 -> (layerBoundary1 - passenger.size.height)
+                    else -> (layerBoundary2 - passenger.size.height)
+                }
+                yOffset
+
+            },
+            stateUpdatePassenger = { newPassenger ->
+                state.updatePassenger(newPassenger)
+            }
+        )
     }
+
 
 
 
@@ -153,12 +183,12 @@ fun PlayScreen(
     if (state.conductor.terminal) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter // Размещение содержимого по центру внизу
+            contentAlignment = Alignment.BottomCenter
         ) {
             Image(
                 painter = painterResource(id = R.drawable.terminal),
                 contentDescription = "Terminal",
-                modifier = Modifier.fillMaxWidth() // Увеличиваем ширину, если нужно
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -167,13 +197,14 @@ fun PlayScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp), // Отступ от края экрана
+            .padding(16.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Button(
             onClick = {
                 println("Terminal button clicked")
-                onEvent(GameEvent.TerminalOn) }
+                onEvent(GameEvent.TerminalOn)
+            }
         ) {
             Text(
                 text = "Terminal"
@@ -183,69 +214,88 @@ fun PlayScreen(
 }
 
 
-
 @Composable
-fun PassengerButton(
+fun PassengerImage(
     passenger: Passenger,
-    onEvent: (GameEvent) -> Unit,
-    imageRes: Int,
-    onDragEnd: (Int, Int, PointF) -> Unit
+    newZindex: (Int) -> Float,
+    newLayer: (Offset) -> Int,
+    layerOffset: (Int) -> Float,
+    stateUpdatePassenger: (Passenger) -> Unit
 ) {
-    val painter = painterResource(id = imageRes)
+    val density = LocalDensity.current.density
+    val screenHeight = LocalConfiguration.current.screenHeightDp
+    val screenWidth = LocalConfiguration.current.screenWidthDp
 
-    // Получаем размеры экрана в dp
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val screenHeightDp = configuration.screenHeightDp.dp
-
-    // Получаем плотность экрана
-    val density = LocalDensity.current
-
-    // Переменные для хранения положения
-    var offsetX by remember { mutableFloatStateOf(passenger.point.x) }
-    var offsetY by remember { mutableFloatStateOf(passenger.point.y) }
+    var offset by remember { mutableStateOf(Offset(passenger.point.x, passenger.point.y)) }
+    var zindex by remember { mutableFloatStateOf(passenger.zindex) }
+    var layer by remember { mutableIntStateOf(passenger.layer) }
 
     Image(
-        painter = painter,
+        painter = painterResource(id = passenger.imageRes),
         contentDescription = "Passenger ${passenger.id}",
         modifier = Modifier
+            .size(passenger.size.width.toDp(), passenger.size.height.toDp())
             .offset(
-                // Преобразуем px в dp для использования в offset
-                x = with(density) { offsetX.coerceIn(0f, screenWidthDp.toPx() - passenger.size.width).toDp() },
-                y = with(density) { offsetY.coerceIn(0f, screenHeightDp.toPx() - passenger.size.height).toDp() }
+                x = with(density) {
+                    offset.x
+                        .coerceIn(0f, screenWidth.toPx() - passenger.size.width)
+                        .toDp()
+                },
+                y = with(density) {
+                    offset.y
+                        .coerceIn(
+                            0f,
+                            screenHeight.toPx() - passenger.size.height
+                        )
+                        .toDp()
+                }
             )
-            .size(passenger.size.width.dp, passenger.size.height.dp)
+            .zIndex(zIndex = zindex)
             .pointerInput(Unit) {
                 detectDragGestures(
+                    onDragEnd = {
+                        layer = newLayer(offset)
+                        zindex = newZindex(layer)
+                        passenger.point = PointF(offset.x, offset.y)
+                        passenger.zindex = zindex
+                        passenger.layer = layer
+                        offset = Offset(offset.x, layerOffset(layer))
+                        stateUpdatePassenger(passenger)
+
+
+                    },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        offsetX = (offsetX + dragAmount.x).coerceIn(0f, with(density) { screenWidthDp.toPx() - passenger.size.width })
-                        offsetY = (offsetY + dragAmount.y).coerceIn(0f, with(density) { screenHeightDp.toPx() - passenger.size.height })
-                    },
-                    onDragEnd = {
-                        // Вычисляем границу слоя
-                        val layerBoundary = with(density) { screenHeightDp.toPx() * 0.3f }
-//                        val (newLayer, adjustedOffsetY) = if (offsetY > layerBoundary) {
-//                            1 to layerBoundary + passenger.size.height / 2f
-//                        } else {
-//                            2 to layerBoundary - passenger.size.height / 2f
-//                        }
-
-                        val newLayer = if (offsetY > layerBoundary) 1 else 2 // Определяем слой
-                        println("Passenger ${passenger.id} Layer=$newLayer, PosY=$offsetY , layerBoundary=$layerBoundary")
-                        // Корректируем позицию по Y в зависимости от слоя
-                        offsetY = if (newLayer == 1) (layerBoundary + passenger.size.height / 2f)
-                        else (layerBoundary - passenger.size.height / 2f)
-
-                        // Ограничиваем корректное положение по Y
-                        val newPosition = PointF(offsetX, offsetY)
-                        onDragEnd(passenger.id, newLayer, newPosition)
+                        // Обновляем смещение
+                        offset = Offset(offset.x + dragAmount.x, offset.y + dragAmount.y)
+                        layer = newLayer(offset)
+                        passenger.point = PointF(offset.x, offset.y)
+                        passenger.zindex = zindex
+                        passenger.layer = layer
+                        stateUpdatePassenger(passenger)
                     }
                 )
+
             }
-            .clickable(onClick = {
-                onEvent(GameEvent.Payment)
-            })
+
+            .clickable {
+                println("layer $layer,zindex  $zindex")
+                println(passenger)
+            }
     )
 }
+
+@Composable
+fun Float.toDp(): Dp {
+    return (this / LocalDensity.current.density).dp
+}
+
+@Composable
+fun Int.toPx(): Float {
+    return this * LocalDensity.current.density
+}
+
+
+
+
 
