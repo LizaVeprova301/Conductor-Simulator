@@ -53,6 +53,7 @@ fun MenuScreen(
             highScore = data
         }
     }
+
     if (state.highScore > highScore) {
         highScore = state.highScore
         coroutine.launch {
@@ -92,7 +93,6 @@ fun MenuScreen(
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold
         )
-
     }
 }
 

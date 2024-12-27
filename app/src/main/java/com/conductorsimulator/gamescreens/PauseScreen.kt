@@ -50,7 +50,6 @@ fun PauseScreen(
             alignment = Alignment.Center,
             modifier = Modifier
                 .clickable(onClick = {
-
                     navController.navigate("play")
                 })
                 .scale(0.9f)

@@ -7,4 +7,6 @@ sealed class GameEvent {
     data object PlusScore: GameEvent()
     data object TerminalOn: GameEvent()
     data object Payment: GameEvent()
+    data object Rabbit: GameEvent()
+
 }

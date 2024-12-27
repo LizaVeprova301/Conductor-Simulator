@@ -9,9 +9,9 @@ data class Passenger(
     var layer: Int,
     val location: Int,
     var point: PointF,
-    val ticket: Boolean,
+    var ticket: Boolean,
     val angryLVL: Int,
-    val stations: Int,
+    var stations: Int,
     val imageRes: Int,
     val size: SizeF,
     var zindex: Float
