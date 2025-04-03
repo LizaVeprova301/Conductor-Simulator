@@ -4,6 +4,7 @@ package com.conductorsimulator.gamelogic.entities
 import android.graphics.PointF
 import android.util.SizeF
 
+
 data class Passenger(
     val id: Int,
     var layer: Int,

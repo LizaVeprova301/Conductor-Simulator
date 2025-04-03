@@ -30,7 +30,7 @@ fun RoundScreen(
     state: GameState,
     navController: NavController,
 ) {
-    var newtimer by remember { mutableIntStateOf(5) }
+    var newtimer by remember { mutableIntStateOf(2) }
     LaunchedEffect(newtimer) {
         delay(1000)
         if (newtimer == 0) {

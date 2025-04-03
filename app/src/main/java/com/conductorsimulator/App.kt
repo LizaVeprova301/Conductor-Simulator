@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.conductorsimulator.gamelogic.GameViewModel
+import com.conductorsimulator.gamelogic.entities.ScreenSettings.initialize
 import com.conductorsimulator.gamescreens.EndScreen
 import com.conductorsimulator.gamescreens.MenuScreen
 import com.conductorsimulator.gamescreens.PauseScreen
@@ -27,6 +28,7 @@ fun App(dataStoreManager: DataStoreManager) {
     val viewModel = viewModel<GameViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
+
 
     NavHost(
         navController = navController,

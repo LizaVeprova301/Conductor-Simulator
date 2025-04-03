@@ -41,8 +41,6 @@ fun PassengerImage(
     if (passenger.stations==0){
         alpha = 0f
         clickable = false
-
-
     }
 
 

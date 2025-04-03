@@ -100,7 +100,7 @@ class GameViewModel() : ViewModel() {
                 _state.update { it.copy(score = state.value.score - 20) }
                 _state.update {
                     it.copy(
-                        conductor = it.conductor.copy(money = state.value.conductor.money -50) // Устанавливаем terminal в true
+                        conductor = it.conductor.copy(money = state.value.conductor.money -50)
                     )
                 }
             }
@@ -110,27 +110,28 @@ class GameViewModel() : ViewModel() {
 
     private fun updateGame(currentGame: GameState, reset: Boolean = false): GameState {
         return if (reset) {
-            GameState() // Возвращаем новое состояние для перезапуска игры
+            GameState()
         } else {
             if (currentGame.isOver) {
                 currentGame
             } else {
-                currentGame // Ваши обновления для текущего состояния
+                currentGame
             }
         }
     }
 
      fun onPassengerTap(index:Int,newPassenger: Passenger) {
+         if (!_state.value.conductor.terminal) {return}
 
         val state = _state.value
-         if (!state.conductor.terminal) {return}
+
         val passengerIndex = state.passengers[index].indexOfFirst { it.id == newPassenger.id }
         if (passengerIndex == -1) return
         if (state.passengers[index][passengerIndex].ticket){
             _state.update { it.copy(score = state.score - 10) }
             _state.update {
                 it.copy(
-                    conductor = it.conductor.copy(money = state.conductor.money -33) // Устанавливаем terminal в true
+                    conductor = it.conductor.copy(money = state.conductor.money -33)
                 )
             }
 
@@ -141,7 +142,7 @@ class GameViewModel() : ViewModel() {
             _state.update { it.copy(score = state.score + 10) }
             _state.update {
                 it.copy(
-                    conductor = it.conductor.copy(money = state.conductor.money +33) // Устанавливаем terminal в true
+                    conductor = it.conductor.copy(money = state.conductor.money +33)
                 )
             }
         }

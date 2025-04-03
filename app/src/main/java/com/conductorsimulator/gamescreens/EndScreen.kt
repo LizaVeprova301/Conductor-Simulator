@@ -1,9 +1,11 @@
 package com.conductorsimulator.gamescreens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.conductorsimulator.R
@@ -25,6 +28,7 @@ import com.conductorsimulator.gamelogic.GameState
 import kotlinx.coroutines.delay
 
 
+@SuppressLint("SuspiciousIndentation")
 @Composable
 fun EndScreen(
     state: GameState,
@@ -58,10 +62,11 @@ fun EndScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Round: ${state.score}",
+            text = "${state.score}",
             color = Color.Black,
             fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 100.dp) // Сдвиг текста вправо
         )
     }
 }
